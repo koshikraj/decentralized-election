@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity >=0.4.0 < 0.6.0;
 
 contract Election {
     // Model a Candidate
@@ -7,6 +7,21 @@ contract Election {
         string name;
         uint voteCount;
     }
+
+
+    enum Role {
+        VOTER,
+        CANDIDATE,
+        COMMITTEE
+    }
+
+    modifier onlyCommitte {
+        require(roles[msg.sender] == Role.COMMITTEE);
+        _;
+    }
+
+    // Store the roles of actor
+    mapping(address => Role) public roles;
 
     // Store accounts that have voted
     mapping(address => bool) public voters;
@@ -21,14 +36,21 @@ contract Election {
         uint indexed _candidateId
     );
 
-    function Election () public {
-        addCandidate("Candidate 1");
-        addCandidate("Candidate 2");
+    event candidateAdded(
+        string _name
+    );
+
+    constructor() public {
+        roles[msg.sender] = Role.COMMITTEE;
+
     }
 
-    function addCandidate (string _name) private {
+    function addCandidate (string memory _name) onlyCommitte public {
         candidatesCount ++;
         candidates[candidatesCount] = Candidate(candidatesCount, _name, 0);
+
+        // emit candidate added event
+        emit candidateAdded(_name);
     }
 
     function vote (uint _candidateId) public {
@@ -44,7 +66,7 @@ contract Election {
         // update candidate vote Count
         candidates[_candidateId].voteCount ++;
 
-        // trigger voted event
-        votedEvent(_candidateId);
+        // emit voted event
+        emit votedEvent(_candidateId);
     }
 }
